@@ -6,11 +6,13 @@ import java.util.function.Supplier;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,8 +31,19 @@ public class DummyControllerTest {
 	@Autowired // 의존성 주입
 	private UserRepository userRepository;
 	
+	@DeleteMapping("/dummy/user/{id}")
+	public String delete(@PathVariable int id) {
+		try {
+			userRepository.deleteById(id);			
+		} catch (EmptyResultDataAccessException e) {
+			return "삭제에 실패하였습니다. 해당 id는 DB에 없습니다.";
+		}
+		
+		return "삭제되었습니다. id" +id;
+	}
+	
 	// email, password
-	@Transactional
+	@Transactional // 함수 종료시 자동 commit 됨
 	@PutMapping("/dummy/user/{id}")
 	public User updateUser(@PathVariable int id, @RequestBody User requestUser) {
 		System.out.println("id :"+id);
@@ -40,11 +53,12 @@ public class DummyControllerTest {
 		User user = userRepository.findById(id).orElseThrow(()->{
 			return new IllegalArgumentException("수정에 실패하였습니다.");
 		});
+		// 변경이 되는곳 (더티체킹)
 		user.setPassword(requestUser.getPassword());
 		user.setEmail(requestUser.getEmail());
 			
 //		userRepository.save(user);
-		return null;
+		return user;
 		
 	}
 	
